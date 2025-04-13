@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ipfs-api
+spec:
+  selector:
+    matchLabels:
+      app: ipfs-api
+  template:
+    metadata:
+      labels:
+        app: ipfs-api
+    spec:
+      containers:
+        - name: ipfs-api
+          image: gabilb/ipfs-api:1.0.0
+          imagePullPolicy: Always
+          env:
+            - name: IPFS_NODE_IP
+              value: "34.118.227.176"
+            - name: IPFS_NODE_PORT
+              value: "5001"
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              port: 8080
+              path: /healthz
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3

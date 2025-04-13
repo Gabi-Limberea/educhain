@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ipfs-api
+  labels:
+    app: ipfs-api
+spec:
+  selector:
+    app: ipfs-api
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    nodePort: 30080
