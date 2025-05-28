@@ -1,0 +1,423 @@
+openapi: 3.0.2
+info:
+  version: '1.0.0'
+  title: EduChain API
+
+  description: |
+    This is a **draft** for the EduChain API documentation. The API is designed to provide a way for educational institutions
+    to store, manage and share student certifications.
+
+# A list of tags used by the definition with additional metadata.
+# The order of the tags can be used to reflect on their order by the parsing tools.
+tags:
+  - name: Provider
+    description: Operations for certification providers
+  - name: Students
+    description: Operations related to students
+servers:
+  - url: 'https://educhain.ro/api/v1'
+
+# Holds the relative paths to the individual endpoints. The path is appended to the
+# basePath in order to construct the full URL.
+paths:
+  '/providers':
+    post: # documentation for GET operation for this path
+      tags:
+        - Provider
+      summary: Register a new certification provider into the system
+      # you can use GFM in operation description too: https://guides.github.com/features/mastering-markdown
+      description: |
+        Register a new certification provider into the system.
+      # operationId should be unique across the whole specification
+      operationId: registerProvider
+      # list of parameters for the operation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderCredentials'
+      responses: # list of responses
+        '200':
+          description: Registered successfully
+        '400':
+          description: Bad request
+        '409':
+          description: Conflict
+        '500':
+          description: Internal server error
+    # documentation for PUT operation for this path
+  /providers/token:
+    post:
+      tags:
+        - Provider
+      summary: Generate a token for a provider
+      description: |
+        Generate a token for a provider.
+      operationId: generateToken
+      security:
+        - basic_auth: [ ]
+        - token_auth: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                ttl:
+                  type: integer
+                  enum:
+                    - 1
+                    - 7
+                    - 14
+                    - 30
+                    - 90
+                    - 365
+                  description: Time to live in days
+                  default: 30
+                  example: 30
+      responses:
+        '200':
+          description: Token generated successfully
+          content:
+            application/json:
+              schema:
+                type: string
+                description: Token for the provider
+                example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /account:
+    get:
+      tags:
+        - Provider
+      summary: Retrieve the account information for the provider
+      # you can use GFM in operation description too: https://guides.github.com/features/mastering-markdown
+      description: |
+        Register a new certification provider into the system.
+      # operationId should be unique across the whole specification
+      security:
+        - token_auth: [ ]
+      operationId: getAccountInfo
+      responses: # list of responses
+        '200':
+          description: Account info retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderCredentials'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+      # documentation for PUT operation for this path
+  /students:
+    post:
+      tags:
+        - Students
+      summary: Register a batch of students into the system
+      description: |
+        Register a batch of students into the system
+      operationId: registerStudents
+      security:
+        - token_auth: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/Student'
+      responses:
+        '200':
+          description: Students registered successfully
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+    get:
+      tags:
+        - Students
+      summary: Get a list of students
+      description: |
+        Get a list of students
+      operationId: getStudents
+      security:
+        - token_auth: [ ]
+      responses:
+        '200':
+          description: Students retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Student'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /students/{id}:
+    get:
+      tags:
+        - Students
+      summary: Get a student by ID
+      description: |
+        Get a student by ID
+      operationId: getStudentById
+      security:
+        - token_auth: [ ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the student to retrieve
+          schema:
+            type: string
+            example: "06670347-9ef3-433f-b71b-18017bdde980"
+      responses:
+        '200':
+          description: Student retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Student not found
+        '500':
+          description: Internal server error
+    patch:
+      tags:
+        - Students
+      summary: Update a student's wallet address
+      description: |
+        Update a student by ID
+      operationId: updateStudentById
+      security:
+        - token_auth: [ ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the student to update
+          schema:
+            type: string
+            example: "06670347-9ef3-433f-b71b-18017bdde980"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - walletAddress
+              properties:
+                walletAddress:
+                  type: string
+                  description: New wallet address for the student
+                  example: "0x1D1479C185d32EB90533a08b36B3CFa5F84A0E6B"
+      responses:
+        '200':
+          description: Student updated successfully
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Student not found
+        '500':
+          description: Internal server error
+  /students/{id}/diplomas:
+    post:
+      description: |
+        Issue a diploma for a student
+      operationId: issueDiploma
+      tags:
+        - Students
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the student to issue a diploma for
+          schema:
+            type: string
+            example: "06670347-9ef3-433f-b71b-18017bdde980"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                diploma:
+                  type: string
+                  format: pdf/jpeg/png
+                  description: The diploma file to upload
+            encoding:
+              diploma:
+                contentType: application/pdf, image/jpeg, image/png
+      responses:
+        '200':
+          description: Diploma issued successfully
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Student not found
+        '500':
+          description: Internal server error
+    get:
+      description: |
+        Get a diploma for a student
+      operationId: getDiploma
+      tags:
+        - Students
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the student to get a diploma for
+          schema:
+            type: string
+            example: "06670347-9ef3-433f-b71b-18017bdde980"
+      responses:
+        '200':
+          description: Diploma retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: The hash ID of the diploma
+                  example: "QmShBmhvEZ1dDwPvLvpjimRW76AQrVz3fbpZYwsqNJN2Xh"
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Student not found
+        '500':
+          description: Internal server error
+  /diplomas:
+    post:
+      description: |
+        Issue diplomas for a batch of students. All files within the archive must be named with the **student ID** and 
+        be in the format of **pdf/jpeg/png**.
+      operationId: issueDiplomas
+      tags:
+        - Students
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                diplomas:
+                  type: string
+                  format: zip
+                  description: The archive with diploma files to upload
+            encoding:
+              diplomas:
+                contentType: application/zip
+      responses:
+        '200':
+          description: Diplomas issued successfully
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+
+# An object to hold reusable parts that can be used across the definition
+components:
+  schemas:
+    ProviderCredentials:
+      description: Provider credentials
+      type: object
+      required:
+        - email
+        - password
+        - organizationInfo
+      properties:
+        email:
+          description: Provider email address
+          type: string
+          format: email
+          example: test.provider@example.com
+        password:
+          description: Provider password
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 20
+          example: testPassword123
+        contractAddress:
+          description: Smart contract address created upon registration
+          type: string
+          format: hexadecimal
+        organizationInfo:
+          $ref: '#/components/schemas/OrganizationInfo'
+    OrganizationInfo:
+      description: Organization information
+      type: object
+      required:
+        - name
+        - address
+      properties:
+        name:
+          description: Organization name
+          type: string
+          example: EduChain Inc.
+        address:
+          description: Organization address
+          type: string
+          example: 1234 Edu St, Education City, EC 12345
+        phoneNumber:
+          description: Organization phone number
+          type: string
+          example: +40 769 666 666
+        website:
+          description: Organization website
+          type: string
+          example: https://www.educhain.org
+    Student:
+      description: |
+        Student information. 
+        **TODO:** 
+        - What info do we actually want to store here about the student? Name, email, date of birth?
+        - Figure out how we handle students receiving multiple certificates. Do we want the provider to specify which
+        certification they are registering the student for? Or do we not care and simply ignore duplicates, the certifications being stored in the
+        database?
+      type: object
+      required:
+        - id
+        - walletAddress
+      properties:
+        id:
+          description: ID of the student
+          type: string
+          example: "06670347-9ef3-433f-b71b-18017bdde980"
+        walletAddress:
+          description: Student wallet address
+          type: string
+          example: "0x1D1479C185d32EB90533a08b36B3CFa5F84A0E6B"
+  # Security scheme definitions that can be used across the definition.
+  securitySchemes:
+    token_auth: # security definition name (you can name it as you want)
+      type: http
+      in: header
+      scheme: bearer
+    basic_auth: # security definition name (you can name it as you want)
+      type: http
+      scheme: basic
