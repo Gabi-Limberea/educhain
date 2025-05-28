@@ -17,7 +17,7 @@ spec:
           imagePullPolicy: Always
           env:
             - name: IPFS_NODE_IP
-              value: "34.118.227.176"
+              value: "ipfs-node"
             - name: IPFS_NODE_PORT
               value: "5001"
           ports:

@@ -1,10 +1,7 @@
 package main
 
 import (
-	"archive/tar"
-	"archive/zip"
 	"bytes"
-	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -17,6 +14,8 @@ import (
 	"time"
 
 	"github.com/Gabi-Limberea/educhain/ipfs-api/constants"
+	multipart2 "github.com/Gabi-Limberea/educhain/ipfs-api/pkg/multipart"
+	"github.com/Gabi-Limberea/educhain/ipfs-api/pkg/zip"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 )
@@ -28,131 +27,6 @@ var (
 	nodePort string
 	nodeHost string
 )
-
-type fileWithName struct {
-	Name string
-	io.ReadCloser
-}
-
-// convertTarGzToZip converts a tar.gz file to a zip archive
-func convertTarGzToZip(tarGz io.ReadCloser) ([]byte, error) {
-	uncompressedTar, err := gzip.NewReader(tarGz)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create gzip reader: %w", err)
-	}
-	defer uncompressedTar.Close()
-
-	tarReader := tar.NewReader(uncompressedTar)
-	buf := new(bytes.Buffer)
-	zipArchive := zip.NewWriter(buf)
-
-	// I expect this loop to only run once, as the tar file is expected to contain a single file, but it is written to
-	// support multiple files as well
-	for {
-		var rawFileBytes []byte
-
-		// read the next file header from the tar archive
-		header, err := tarReader.Next()
-		if err == io.EOF {
-			slog.Info("Reached end of tar file")
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to go to next file in tar: %w", err)
-		}
-
-		// initialize file buffer
-		rawFileBytes = make([]byte, header.Size)
-		slog.Info("Reading file from tar", "file name", header.Name, "size", header.Size)
-		if _, err = tarReader.Read(rawFileBytes); err != nil && err != io.EOF {
-			return nil, fmt.Errorf("failed to read file from tar: %w", err)
-		}
-
-		// create file in zip archive with the name defined in the tar header
-		slog.Info("Writing file to zip", "file name", header.Name, "size", header.Size)
-		file, err := zipArchive.Create(header.Name)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create zip file: %w", err)
-		}
-
-		// write the file bytes to the file in the zip archive
-		_, err = file.Write(rawFileBytes)
-		if err != nil {
-			return nil, fmt.Errorf("failed to write file to zip: %w", err)
-		}
-	}
-
-	// write and close the zip archive
-	if err = zipArchive.Close(); err != nil {
-		return nil, fmt.Errorf("failed to write zip: %w", err)
-	}
-	slog.Info("File written to zip", "size", buf.Len())
-
-	return buf.Bytes(), nil
-}
-
-// addFileToForm adds a file to the multipart form data
-func addFileToForm(multipartWriter *multipart.Writer, file fileWithName) error {
-	fw, err := multipartWriter.CreateFormFile("", file.Name)
-	if err != nil {
-		slog.Error("error creating form field", "msg", err)
-		return err
-	}
-
-	if _, err = io.Copy(fw, file); err != nil {
-		slog.Error("error copying form field data", "msg", err)
-		return err
-	}
-
-	return nil
-}
-
-func addFilesInZipToForm(multipartWriter *multipart.Writer, archive io.ReaderAt, archiveSize int64) error {
-	files, err := unzipArchive(archive, archiveSize)
-	if err != nil {
-		slog.Error("error unzipping archive", "msg", err)
-		return err
-	}
-
-	for _, file := range files {
-		if err = addFileToForm(multipartWriter, file); err != nil {
-			slog.Error("error adding file to form", "msg", err)
-			return err
-		}
-		if err = file.Close(); err != nil {
-			slog.Error("error closing file", "msg", err)
-			return err
-		}
-	}
-
-	return nil
-}
-
-func unzipArchive(archive io.ReaderAt, archiveSize int64) ([]fileWithName, error) {
-	zipReader, err := zip.NewReader(archive, archiveSize)
-	if err != nil {
-		slog.Error("error creating zip reader", "msg", err)
-		return nil, err
-	}
-
-	var files []fileWithName
-	for _, file := range zipReader.File {
-		slog.Info("Opening file from zip", "file name", file.Name, "size", file.UncompressedSize64)
-		fileReader, err := file.Open()
-		if err != nil {
-			slog.Error("error opening file in zip", "msg", err)
-			return nil, err
-		}
-
-		files = append(
-			files, fileWithName{
-				Name: file.Name, ReadCloser: fileReader,
-			},
-		)
-	}
-
-	return files, nil
-}
 
 func handleFileUpload(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Received request to upload file")
@@ -167,8 +41,6 @@ func handleFileUpload(w http.ResponseWriter, r *http.Request) {
 	toSend := new(bytes.Buffer)
 	multipartWriter := multipart.NewWriter(toSend)
 
-	// I don't care for the file header, since I want to upload the file based on its content. This is to avoid
-	// users from leaking sensitive information mentioned in the file name
 	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
 		slog.Error("error getting form file", "msg", err)
@@ -182,16 +54,18 @@ func handleFileUpload(w http.ResponseWriter, r *http.Request) {
 	)
 	if fileHeader.Header.Get("Content-Type") == "application/zip" {
 		slog.Info("File is a zip archive")
-		if err = addFilesInZipToForm(multipartWriter, file, fileHeader.Size); err != nil {
+		if err = multipart2.AddFilesInZipToForm(
+			multipartWriter, file, fileHeader.Size, "",
+		); err != nil {
 			slog.Error("error adding files to form", "msg", err)
 			http.Error(w, "something went wrong", http.StatusBadRequest)
 			return
 		}
 	} else {
-		if err = addFileToForm(
-			multipartWriter, fileWithName{
+		if err = multipart2.AddFileToForm(
+			multipartWriter, zip.FileWithName{
 				Name: fileHeader.Filename, ReadCloser: file,
-			},
+			}, "",
 		); err != nil {
 			slog.Error("error adding file to form", "msg", err)
 			http.Error(w, "something went wrong", http.StatusBadRequest)
@@ -205,7 +79,9 @@ func handleFileUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := http.Post(nodeHost+"/add", "multipart/form-data; boundary="+multipartWriter.Boundary(), toSend)
+	resp, err := http.Post(
+		nodeHost+"/add", "multipart/form-data; boundary="+multipartWriter.Boundary(), toSend,
+	)
 	if err != nil {
 		slog.Error("error executing POST request", "msg", err)
 		http.Error(w, "failed to upload file", http.StatusInternalServerError)
@@ -238,7 +114,8 @@ func handleFileDownload(w http.ResponseWriter, r *http.Request) {
 
 	// create request to the IPFS node with timeout context to avoid blocking when cid cannot be found
 	req, err := http.NewRequestWithContext(
-		timeoutCtx, http.MethodPost, fmt.Sprintf("%s/get?arg=%s&archive=true&compress=true", nodeHost, cid), nil,
+		timeoutCtx, http.MethodPost,
+		fmt.Sprintf("%s/get?arg=%s&archive=true&compress=true", nodeHost, cid), nil,
 	)
 	if err != nil {
 		slog.Error("error creating request", "msg", err)
@@ -266,7 +143,7 @@ func handleFileDownload(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 
 	// response is expected to be a tar.gz file, convert it to zip for better compatibility
-	zipFile, err := convertTarGzToZip(resp.Body)
+	zipFile, err := zip.ConvertTarGzToZip(resp.Body)
 	if err != nil {
 		slog.Error("error converting tar.gz to zip", "msg", err)
 		http.Error(w, "failed to convert file", http.StatusInternalServerError)
