@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smart-contract-master-key
+data:
+# REPLACE THIS WITH A VALID MASTER KEY FROM THE GETH NODE
+  master-key.json: |
+    {
+      "address": "ac26a886543b4ada50a81ebf4e698cd25e7af8c0",
+      "crypto": {
+        "cipher": "aes-128-ctr",
+        "ciphertext": "d2537365f6ef15d2e9c0d64fdcac301442886ccc9da309248da6bad0ea183527",
+        "cipherparams": {
+          "iv": "af819d39dcc2eb2eea0a4443aa103ae1"
+        },
+        "kdf": "scrypt",
+        "kdfparams": {
+          "dklen": 32,
+          "n": 4096,
+          "p": 6,
+          "r": 8,
+          "salt": "bfb60eaa07fa6093c5439cd65b6def3f55e79a00962eacd1c5db1debae65ffae"
+        },
+        "mac": "bbb82c528974d823bb13f172777f228ba89e74552cf68d3a8846ae7104a39823"
+      },
+      "id": "cb5bf95b-f847-41bb-a800-5ae22d903f28",
+      "version": 3
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smart-contract-api
+spec:
+  selector:
+    matchLabels:
+      app: smart-contract-api
+  template:
+    metadata:
+      labels:
+        app: smart-contract-api
+    spec:
+      containers:
+        - name: smart-contract-api
+          image: gabilb/smart-contract-api:v1.0.0
+          imagePullPolicy: Always
+          env:
+            - name: IPFS_API_HOST
+              value: "ipfs-api"
+            - name: IPFS_API_PORT
+              value: "8080"
+            - name: DB_HOST
+              value: "postgres-rw"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "educhain"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: postgres-user-creds
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: postgres-user-creds
+            - name: NET_URL
+              value: "http://geth-node:8545"
+            - name: JWT_SIGNING_KEY
+              value: "superSecretKey"
+            - name: MASTER_KEY
+              value: "/master-key.json"
+            - name: MASTER_KEY_PASSWD
+              value: "testPassword123"
+          volumeMounts:
+            - name: smart-contract-master-key
+              mountPath: /master-key.json
+              subPath: master-key.json
+          ports:
+            - containerPort: 8081
+          readinessProbe:
+            httpGet:
+              port: 8081
+              path: /healthz
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+      volumes:
+        - name: smart-contract-master-key
+          configMap:
+            name: smart-contract-master-key
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smart-contract-api
+  labels:
+    app: smart-contract-api
+spec:
+  selector:
+    app: smart-contract-api
+  type: NodePort
+  ports:
+    - port: 8081
+      targetPort: 8081
+      protocol: TCP
+      nodePort: 30081

@@ -1,6 +1,7 @@
 FROM golang:1.24-alpine3.21 AS builder
 
-COPY . /app
+COPY ./smart-contract-api /app
+COPY ./ipfs-api /ipfs-api
 WORKDIR /app
 
 RUN ["go", "mod", "download"]

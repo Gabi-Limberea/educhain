@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-cfg
+  labels:
+    app: postgres
+    type: init
+data:
+  init.sql: |
+    SET role admin;
+
+    CREATE TABLE IF NOT EXISTS providers (
+      pid SERIAL PRIMARY KEY,
+      email VARCHAR(256) UNIQUE NOT NULL,
+      passwd VARCHAR(256) NOT NULL,
+      contract_address VARCHAR(256) NOT NULL,
+      name VARCHAR(256) UNIQUE NOT NULL,
+      address VARCHAR(256) NOT NULL,
+      phone_number VARCHAR(256),
+      website VARCHAR(256)
+    );
+
+    CREATE TABLE IF NOT EXISTS students (
+      sid SERIAL PRIMARY KEY,
+      external_id VARCHAR(256) NOT NULL,
+      wallet_address VARCHAR(256) NOT NULL,
+      provider INTEGER NOT NULL REFERENCES providers (pid) ON DELETE CASCADE,
+      UNIQUE (external_id, provider)
+    );
+
+    CREATE TABLE IF NOT EXISTS diplomas (
+      did INTEGER NOT NULL,
+      student VARCHAR(256) NOT NULL,
+      provider INTEGER NOT NULL REFERENCES providers (pid) ON DELETE CASCADE,
+      PRIMARY KEY (did, student, provider),
+      FOREIGN KEY (student, provider) REFERENCES students (external_id, provider) ON DELETE CASCADE
+    );

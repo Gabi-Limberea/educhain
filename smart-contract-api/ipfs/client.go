@@ -26,14 +26,14 @@ type File struct {
 }
 
 func NewClient() *Client {
-	host := os.Getenv("IPFS_HOST")
+	host := os.Getenv("IPFS_API_HOST")
 	if host == "" {
-		log.Fatal("IPFS_HOST environment variable not set")
+		log.Fatal("IPFS_API_HOST environment variable not set")
 	}
 
-	port := os.Getenv("IPFS_PORT")
+	port := os.Getenv("IPFS_API_PORT")
 	if port == "" {
-		log.Fatal("IPFS_PORT environment variable not set")
+		log.Fatal("IPFS_API_PORT environment variable not set")
 	}
 
 	return &Client{host: host, port: port}

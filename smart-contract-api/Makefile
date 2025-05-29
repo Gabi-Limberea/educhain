@@ -9,7 +9,7 @@ run:
 	go run main.go
 
 docker-build:
-	docker build -f docker/Dockerfile -t gabilb/smart-contract-api:$(VERSION) .
+	docker build -f ./docker/Dockerfile -t gabilb/smart-contract-api:$(VERSION) ..
 
 docker-push:
 	docker push gabilb/smart-contract-api:$(VERSION)

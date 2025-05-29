@@ -14,7 +14,7 @@ func main() {
 	h := handler.NewHandler()
 	defer h.Close()
 
-	router.HandleFunc("/health", h.HealthCheck).Methods(http.MethodGet)
+	router.HandleFunc("/healthz", h.HealthCheck).Methods(http.MethodGet)
 	router.HandleFunc("/providers", h.ProviderRegister).Methods(http.MethodPost)
 	router.HandleFunc("/providers/token", h.ProviderTokenGenerate).Methods(http.MethodPost)
 	router.HandleFunc("/account", h.GetProviderInfo).Methods(http.MethodGet)
