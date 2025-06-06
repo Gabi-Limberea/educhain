@@ -13,7 +13,7 @@ function NavbarComponent() {
     return (
         <Navbar expand="lg" className="bg-body-tertiary">
         <Container fluid>
-            <Navbar.Brand href="#">Future logo</Navbar.Brand>
+            <Navbar.Brand href="#">EduChain</Navbar.Brand>
             <Navbar.Toggle aria-controls="navbarScroll" />
             <Navbar.Collapse id="navbarScroll">
             <Nav
@@ -37,10 +37,6 @@ function NavbarComponent() {
                 </NavDropdown.Item>
                 </NavDropdown>
                 
-                {/* example of disabled link if needed */}
-                <Nav.Link href="#" disabled>
-                LinkNoLink
-                </Nav.Link>
             </Nav>
 
 			{/* LOGIN, SIGNUP  and LOGOUT*/}
@@ -62,16 +58,6 @@ function NavbarComponent() {
 				)}
             </Nav>
 
-            {/* search bar if needed, probably not, !!!TO DELETE LATER */}
-            {/* <Form className="d-flex">
-                <Form.Control
-                type="search"
-                placeholder="Search"
-                className="me-2"
-                aria-label="Search"
-                />
-                <Button variant="outline-success">Search</Button>
-            </Form> */}
             </Navbar.Collapse>
         </Container>
         </Navbar>
