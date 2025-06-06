@@ -6,3 +6,4 @@ gke_gcloud_auth_plugin_cache
 *.bin
 artifacts/
 key-file.json
+node_modules/

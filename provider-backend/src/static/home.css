@@ -1,0 +1,54 @@
+html {
+    scroll-behavior: smooth;
+  }
+  
+.layout {
+    display: grid;
+    grid-template-columns: 200px 1fr 200px;
+    grid-template-areas: "left main right";
+    height: 100vh;
+    overflow: hidden;
+}
+
+.left, .right {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #fafafa;
+    border: 1px solid #eee;
+}
+
+.left {
+    grid-area: left;
+}
+
+.main {
+    grid-area: main;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.right {
+    grid-area: right;
+}
+
+.right ul {
+    list-style: none;
+    padding: 0;
+}
+
+.right li.active > button {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.right button {
+    background: none;
+    border: none;
+    padding: 0.5rem 0;
+    text-align: left;
+    width: 100%;
+    cursor: pointer;
+}

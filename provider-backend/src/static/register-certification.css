@@ -1,0 +1,18 @@
+.container-content {
+    width: 50%;
+    max-width: 90%;
+    height: auto; 
+    max-height: calc(100vh - 100px); /* Prevent overflow */
+    position: absolute; 
+    top: 30%; /* Move the container to the middle of the page vertically */
+    left: 50%; /* Move the container to the middle of the page horizontally */
+    transform: translate(-50%, -50%); /* Adjust for perfect centering */
+    display: flex;
+    justify-content: center; /* Center content horizontally */
+    align-items: center; /* Center content vertically */
+    background-color: #f8f9fa; 
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+    padding: 20px;
+    overflow: auto;
+}
