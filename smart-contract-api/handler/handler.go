@@ -314,7 +314,7 @@ func (h *Handler) StudentsEnroll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wr.Object(http.StatusCreated, "successfully enrolled students")
+	wr.Message(http.StatusCreated, "successfully enrolled students")
 }
 
 // StudentsGet retrieves all students registered for the provider

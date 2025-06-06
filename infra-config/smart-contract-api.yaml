@@ -6,12 +6,12 @@ data:
 # REPLACE THIS WITH A VALID MASTER KEY FROM THE GETH NODE
   master-key.json: |
     {
-      "address": "ac26a886543b4ada50a81ebf4e698cd25e7af8c0",
+      "address": "689a78527274e0e76fa6c21eb5eb0acb5c7d052e",
       "crypto": {
         "cipher": "aes-128-ctr",
-        "ciphertext": "d2537365f6ef15d2e9c0d64fdcac301442886ccc9da309248da6bad0ea183527",
+        "ciphertext": "0c3c32fad910311d8f19b4e3afed2b663303e5a6c02ca1bcb97e0cfd50a90953",
         "cipherparams": {
-          "iv": "af819d39dcc2eb2eea0a4443aa103ae1"
+          "iv": "ec1ce686c2b2fccc4812fde5a8da93d2"
         },
         "kdf": "scrypt",
         "kdfparams": {
@@ -19,13 +19,14 @@ data:
           "n": 4096,
           "p": 6,
           "r": 8,
-          "salt": "bfb60eaa07fa6093c5439cd65b6def3f55e79a00962eacd1c5db1debae65ffae"
+          "salt": "8ee1e3da56e975667ba8411d875592fd698ea3a97c93e1d521164d11c9d0e4ef"
         },
-        "mac": "bbb82c528974d823bb13f172777f228ba89e74552cf68d3a8846ae7104a39823"
+        "mac": "e6622362cff0790b6d64951e2c1aab0865793149369b122ead447d92bbb50d4d"
       },
-      "id": "cb5bf95b-f847-41bb-a800-5ae22d903f28",
+      "id": "d4eac015-5bec-4a0d-807d-bbfd820a6040",
       "version": 3
     }
+
 
 ---
 apiVersion: apps/v1

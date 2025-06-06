@@ -34,6 +34,8 @@ spec:
       args: [
           "--dev",
           "--http",
+          "--http.addr",
+          "0.0.0.0",
           "--http.api",
           "eth,net,web3",
           "--datadir",
@@ -77,7 +79,7 @@ spec:
   ports:
     - name: geth
       port: 8545
-      targetPort: geth
+      targetPort: 8545
       protocol: TCP
       nodePort: 30545
   selector:
