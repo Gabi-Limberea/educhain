@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 import { useFormValidation } from '../utility/userFormValidation';
 import { 
     validateEmail, 
@@ -28,6 +29,7 @@ const studentInitialValues = {
 const providerInitialValues = {
     institutionName: '',
     email: '',
+    // walletAddress: '',
     address: '',
     phoneNumber: '',
     website: '',
@@ -50,7 +52,7 @@ function Signup() {
         setUserType(newUserType);
     };
 
-    const handleSubmit = (event: React.FormEvent) => {
+    const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
 
         let validations: Record<string, (value: string) => string>;
@@ -68,6 +70,7 @@ function Signup() {
             validations = {
                 institutionName: validateRequired,
                 email: validateEmail,
+                // walletAddress:    validateWalletAddress,
                 address: validateRequired,
                 phoneNumber: validatePhone,
                 website: validateWebsite, // Optional
@@ -79,11 +82,52 @@ function Signup() {
         const isValid = currentForm.validateAll(validations);
 
         if (isValid) {
-            // Navigate based on user type
-            if (userType === 'student') {
-                navigate('/student-dashboard');
-            } else {
-                navigate('/registerStudents');
+            try {
+                if (userType === 'student') {
+                    // Register the student
+                    const studentPayload = {
+                        email: studentForm.values.email,
+                        name: studentForm.values.name,
+                        surname: studentForm.values.surname,
+                        walletAddress: studentForm.values.walletAddress,
+                        password: studentForm.values.password,
+                    };
+                    await api.post('/students', studentPayload); // to delete the students signup option later !!!
+
+                } else {
+                    // Register the provider
+                    const providerPayload = {
+                        email:           providerForm.values.email,
+                        password:        providerForm.values.password,
+                        // contractAddress: providerForm.values.walletAddress,
+                        organizationInfo: {
+                          name:        providerForm.values.institutionName,
+                          address:     providerForm.values.address,
+                          phoneNumber: providerForm.values.phoneNumber,
+                          website:     providerForm.values.website,
+                        }
+                    };
+                    await api.post('/providers', providerPayload);
+
+                    // Login to get JWT
+                    const { data } = await api.post<{ token: string }>('/providers/token', {
+                        email: providerForm.values.email,
+                        password: providerForm.values.password,
+                    });
+                    localStorage.setItem('authToken', data.token);
+                    api.defaults.headers.common.Authorization = `Bearer ${data.token}`;
+
+                    navigate('/registerStudents');
+                }
+            } catch (err: any) {
+                const serverErrors = err.response?.data?.errors;
+                if (serverErrors) {
+                    Object.entries(serverErrors).forEach(([field, msg]) => {
+                        currentForm.setError(field, msg as string);
+                    });
+                } else {
+                    console.error(err);
+                }
             }
         }
     };
@@ -187,6 +231,24 @@ function Signup() {
                             />
                             {providerForm.errors.email && <Form.Text className="text-danger">{providerForm.errors.email}</Form.Text>}
                         </Form.Group>
+{/* 
+                        <Form.Group className="mb-3 w-100" controlId="providerWallet">
+                            <Form.Label>Wallet (Contract) Address</Form.Label>
+                            <Form.Control
+                                type="text"
+                                placeholder="0x1234…"
+                                value={providerForm.values.walletAddress}
+                                isInvalid={!!providerForm.errors.walletAddress}
+                                onChange={e => providerForm.handleChange(
+                                'walletAddress',
+                                e.target.value,
+                                validateWalletAddress
+                                )}
+                            />
+                            <Form.Control.Feedback type="invalid">
+                                {providerForm.errors.walletAddress}
+                            </Form.Control.Feedback>
+                        </Form.Group> */}
 
                         <Form.Group className="mb-3 w-100" controlId="formBasicAddress">
                             <Form.Label>Address</Form.Label>
@@ -242,15 +304,9 @@ function Signup() {
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Repeat Password"
                         value={currentForm.values.repeatPassword}
-                        onChange={(e) =>
-                            currentForm.handleChange('repeatPassword', e.target.value, (value) =>
-                                validateRepeatPassword(currentForm.values.password, value)
-                            )
-                        }
+                        onChange={(e) => currentForm.handleChange('repeatPassword', e.target.value, (value) => validateRepeatPassword(currentForm.values.password, value))}
                     />
-                    {currentForm.errors.repeatPassword && (
-                        <Form.Text className="text-danger">{currentForm.errors.repeatPassword}</Form.Text>
-                    )}
+                    {currentForm.errors.repeatPassword && <Form.Text className="text-danger">{currentForm.errors.repeatPassword}</Form.Text>}
                 </Form.Group>
 
                 {/* Show Password Checkbox */}

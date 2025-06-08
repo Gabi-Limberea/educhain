@@ -27,6 +27,10 @@ export const useFormValidation = (initialState: Record<string, string>) => {
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0; // Return true if no errors
     };
+    
+    const setError = (field: string, message: string) => {
+        setErrors(e => ({ ...e, [field]: message }));
+    };
 
-    return { values, errors, handleChange, validateField, validateAll };
+    return { values, errors, handleChange, validateField, validateAll, setError };
 };
