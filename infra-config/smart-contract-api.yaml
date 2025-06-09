@@ -44,7 +44,7 @@ spec:
     spec:
       containers:
         - name: smart-contract-api
-          image: gabilb/smart-contract-api:v1.0.0
+          image: gabilb/smart-contract-api:v1.0.7
           imagePullPolicy: Always
           env:
             - name: IPFS_API_HOST
