@@ -25,7 +25,7 @@ func (w *writer) Error(httpCode int, err error) {
 	jsonErr := map[string]string{
 		"error": err.Error(),
 	}
-	
+
 	w.Object(httpCode, jsonErr)
 }
 

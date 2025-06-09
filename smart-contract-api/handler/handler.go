@@ -116,16 +116,19 @@ func (h *Handler) checkAuthorization(r *http.Request) (int64, bool) {
 	return pid, true
 }
 
-func (h *Handler) NotImplemented(w http.ResponseWriter, _ *http.Request) {
+func (h *Handler) NotImplemented(w http.ResponseWriter, r *http.Request) {
+	h.CORSOptionsHandler(w, r)
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-func (h *Handler) HealthCheck(w http.ResponseWriter, _ *http.Request) {
+func (h *Handler) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	h.CORSOptionsHandler(w, r)
 	w.WriteHeader(http.StatusOK)
 }
 
 // ProviderRegister registers a new certification provider into the system
 func (h *Handler) ProviderRegister(w http.ResponseWriter, r *http.Request) {
+	h.CORSOptionsHandler(w, r)
 	wr := newWriter(w)
 
 	var provider models.Provider
@@ -166,6 +169,7 @@ func (h *Handler) ProviderRegister(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetProviderInfo(w http.ResponseWriter, r *http.Request) {
+	h.CORSOptionsHandler(w, r)
 	wr := newWriter(w)
 
 	tok, err := h.getJWT(r)
@@ -216,6 +220,7 @@ func (h *Handler) GetProviderInfo(w http.ResponseWriter, r *http.Request) {
 
 // ProviderTokenGenerate generates a new JWT token for provider authorization
 func (h *Handler) ProviderTokenGenerate(w http.ResponseWriter, r *http.Request) {
+	h.CORSOptionsHandler(w, r)
 	wr := newWriter(w)
 
 	email, password, ok := r.BasicAuth()
@@ -278,6 +283,7 @@ func (h *Handler) ProviderTokenGenerate(w http.ResponseWriter, r *http.Request) 
 
 // StudentsEnroll registers a batch of students for the provider
 func (h *Handler) StudentsEnroll(w http.ResponseWriter, r *http.Request) {
+	h.CORSOptionsHandler(w, r)
 	wr := newWriter(w)
 	pid, authorized := h.checkAuthorization(r)
 	if !authorized {
@@ -319,6 +325,7 @@ func (h *Handler) StudentsEnroll(w http.ResponseWriter, r *http.Request) {
 
 // StudentsGet retrieves all students registered for the provider
 func (h *Handler) StudentsGet(w http.ResponseWriter, r *http.Request) {
+	h.CORSOptionsHandler(w, r)
 	wr := newWriter(w)
 	pid, authorized := h.checkAuthorization(r)
 	if !authorized {
@@ -388,6 +395,7 @@ func (h *Handler) studentExists(externalID string, pid int64) (bool, error) {
 }
 
 func (h *Handler) StudentGetByID(w http.ResponseWriter, r *http.Request) {
+	h.CORSOptionsHandler(w, r)
 	wr := newWriter(w)
 	pid, authorized := h.checkAuthorization(r)
 	if !authorized {
@@ -434,6 +442,7 @@ func (h *Handler) StudentGetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DiplomasGet(w http.ResponseWriter, r *http.Request) {
+	h.CORSOptionsHandler(w, r)
 	wr := newWriter(w)
 	pid, authorized := h.checkAuthorization(r)
 	if !authorized {
@@ -546,6 +555,7 @@ func (h *Handler) uploadDiplomaForStudent(
 }
 
 func (h *Handler) DiplomaUpload(w http.ResponseWriter, r *http.Request) {
+	h.CORSOptionsHandler(w, r)
 	wr := newWriter(w)
 	pid, authorized := h.checkAuthorization(r)
 	if !authorized {
@@ -635,6 +645,7 @@ func (h *Handler) DiplomaUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DiplomasBulkUpload(w http.ResponseWriter, r *http.Request) {
+	h.CORSOptionsHandler(w, r)
 	wr := newWriter(w)
 	pid, authorized := h.checkAuthorization(r)
 	if !authorized {
@@ -722,4 +733,10 @@ func (h *Handler) DiplomasBulkUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	wr.Object(http.StatusCreated, diplomas)
+}
+
+func (h *Handler) CORSOptionsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 }
