@@ -39,11 +39,16 @@ function NavbarComponent() {
 					<Nav.Link href="/login" className="d-inline-flex">Login</Nav.Link>
 					</>
 				)}
-				{currentLocation.pathname === '/registerStudents' && (
+				{currentLocation.pathname === '/registerStudents' || currentLocation.pathname === '/registerCertification' && (
                     <AccountDropdown></AccountDropdown>
                     // <i className="bi bi-person-circle account-icon"></i>
                     // <Nav.Link href="/logout">Logout</Nav.Link>
 				)}
+                {currentLocation.pathname === '/account' && (
+                    // <i className="bi bi-person-circle account-icon"></i>
+                    <Nav.Link href="/logout">Logout</Nav.Link>
+				)}
+
             </Nav>
 
             </Navbar.Collapse>

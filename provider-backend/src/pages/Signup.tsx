@@ -3,6 +3,7 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import {postJson} from '../services/fetchClient'
 import { useFormValidation } from '../utility/userFormValidation';
 import { 
     validateEmail, 
@@ -107,17 +108,29 @@ function Signup() {
                           website:     providerForm.values.website,
                         }
                     };
+
                     await api.post('/providers', providerPayload);
 
                     // Login to get JWT
                     const { data } = await api.post<{ token: string }>('/providers/token', {
-                        email: providerForm.values.email,
+                        name: providerForm.values.email,
                         password: providerForm.values.password,
                     });
                     localStorage.setItem('authToken', data.token);
                     api.defaults.headers.common.Authorization = `Bearer ${data.token}`;
 
                     navigate('/registerStudents');
+                    // Register provider
+                    // await postJson('/providers', providerPayload);
+                    // const { token } = await postJson<{ email: string; password: string }, { token: string }>(
+                    // '/providers/token',
+                    // {
+                    //     email: providerForm.values.email,
+                    //     password: providerForm.values.password
+                    // }
+                    // );
+                    // localStorage.setItem('authToken', token);
+                    // navigate('/registerStudents');
                 }
             } catch (err: any) {
                 const serverErrors = err.response?.data?.errors;

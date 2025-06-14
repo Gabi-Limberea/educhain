@@ -1,52 +1,68 @@
 import { useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
+import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { useFormValidation } from '../utility/userFormValidation';
 import { validateEmail, validatePassword, validateRepeatPassword } from '../utility/validationUtils';
-
+const rootNode = document.getElementById('root')
 
 function Login() {
 	const[showPassword, setShowPassword] = useState(false);
 	const[ validFormData, setValidFormData] = useState(false);
 	const navigate = useNavigate();
+	const[password, setPassword] = useState('');
+	const[email, setEmail] = useState('');
+
+	// const ttl = {
+	// 	""
+	// }
+
 
 	const { values, errors, handleChange, validateAll } = useFormValidation({
 			email: '',
-		});
+	});
 	
-	const handleSubmit = (event: React.FormEvent) => {
+	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
+
+		// console.log("emailul este", email);
 
 		const isValid = validateAll({
 			email: validateEmail,
 		});
 
-		if (isValid) {
-			navigate('/registerStudents');
-			setValidFormData(true);
-		} else {
-			setValidFormData(false);
-		}
+		const config = {
+			auth: {
+					"username": email,
+					"password": password
+			}
+		};
+			
+		await api.post('/providers/token', "", config);
+		navigate('/registerStudents');
+
+		setValidFormData(true);
 	};
 
 	return (
 		<div className="d-flex justify-content-center py-4">
-			<Form className='d-flex flex-column align-items-start w-25'>
+			<Form className='d-flex flex-column align-items-start w-25' onSubmit={handleSubmit}>
 				<Form.Group className="mb-3 w-100" controlId="formBasicEmail">
 					<Form.Label>Email address</Form.Label>
 					<Form.Control
                         type="email"
                         placeholder="Enter email"
                         value={values.email}
-                        onChange={(e) => handleChange('email', e.target.value, validateEmail)}
+                        onChange={e => {handleChange('email', e.target.value, validateEmail); setEmail(e.target.value)}}
                     />
                     {errors.email && <Form.Text className="text-danger">{errors.email}</Form.Text>}
 				</Form.Group>
 
 				<Form.Group className="mb-3 w-100" controlId="formBasicPassword">
 					<Form.Label className='d-inline-flex'>Password</Form.Label>
-					<Form.Control type={showPassword ? 'text' : 'password'} placeholder="Password" className="w-100"/>
+					<Form.Control type={showPassword ? 'text' : 'password'} placeholder="Password" className="w-100"
+					onChange={(e) => setPassword(e.target.value)}/>
 				</Form.Group>
 				<Form.Group className="mb-3 w-100 d-flex align-items-center" controlId="formBasicCheckbox">
 					<Form.Check type="checkbox" label="Show password" checked={showPassword} 
