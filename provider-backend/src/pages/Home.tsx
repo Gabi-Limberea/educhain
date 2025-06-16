@@ -17,6 +17,10 @@ const Home: FC = () => {
 		setShowMenu(false);
 	};
 
+	const redirectToDocs = () => {
+		window.location.href = '/redoc-static.html';
+	}
+
 	return (
 		<div className="bg-white">
 			{/* Collapsible Sticky Sidebar Navigation */}
@@ -66,12 +70,12 @@ const Home: FC = () => {
 								Features
 							</button>
 							<button
-								onClick={() => scrollToSection('trusted')}
+								onClick={() => scrollToSection('getStarted')}
 								className="btn btn-sm btn-outline-secondary text-start px-3 py-2"
 								style={{ fontSize: '0.875rem', minWidth: '140px' }}
 							>
 								<i className="bi bi-shield-check me-2"></i>
-								Made for
+								Get started
 							</button>
 						</div>
 					</div>
@@ -134,15 +138,15 @@ const Home: FC = () => {
 								The Blockchain Credentialing Platform
 							</h1>
 							<p className="lead text-muted mb-4">
-								The leading platform to design, issue, and manage blockchain-verified digital credentials. 
-								Secure, verifiable, and trusted by educational institutions worldwide.
+							A platform that enables educational providers to issue verifiable diplomas 
+							using blockchain technology—secure, efficient, and easy to use.
 							</p>
 							<div className="d-flex gap-3 flex-wrap">
 								<Button variant="primary" size="lg" href="/signup">
-									Get Started Free
+									Get Started Now
 								</Button>
-								<Button variant="outline-secondary" size="lg" href="/help">
-									See How It Works
+								<Button variant="outline-secondary" size="lg" onClick={redirectToDocs}>
+									API Documentation
 								</Button>
 							</div>
 						</Col>
@@ -198,13 +202,14 @@ const Home: FC = () => {
 								<Card.Body className="p-4">
 									<div className="d-flex align-items-center mb-3">
 										<div className="bg-primary bg-opacity-10 rounded p-2 me-3">
-											<i className="bi bi-palette text-primary" style={{ fontSize: '1.5rem' }}></i>
+											<i className="bi bi-ui-checks text-primary" style={{ fontSize: '1.5rem' }}></i>
 										</div>
-										<h4 className="fw-bold text-dark mb-0">Design and Issue Credentials</h4>
+										<h4 className="fw-bold text-dark mb-0">Effortless Process</h4>
 									</div>
 									<p className="text-muted">
-										Get access to the entire credentialing value-chain. Design your verifiable credentials 
-										with your branding and style, issue them to your users, and then manage their lifecycle.
+									Issuing diplomas has never been easier. Our platform streamlines the entire process, 
+									allowing institutions to generate and distribute official digital diplomas in just a few clicks. 
+									Say goodbye to manual paperwork and delays.
 									</p>
 								</Card.Body>
 							</Card>
@@ -214,13 +219,14 @@ const Home: FC = () => {
 								<Card.Body className="p-4">
 									<div className="d-flex align-items-center mb-3">
 										<div className="bg-success bg-opacity-10 rounded p-2 me-3">
-											<i className="bi bi-shield-check text-success" style={{ fontSize: '1.5rem' }}></i>
+											<i className="bi bi-lock-fill text-success" style={{ fontSize: '1.5rem' }}></i>
 										</div>
-										<h4 className="fw-bold text-dark mb-0">Instant Blockchain Verification</h4>
+										<h4 className="fw-bold text-dark mb-0">Blockchain Security</h4>
 									</div>
 									<p className="text-muted">
-										Ensure your awards are trusted by third-parties. Our certificates are automatically 
-										uploaded to the blockchain for secure and instant verification by employers and auditors.
+									Every diploma is registered and verified on the blockchain, ensuring its authenticity 
+									and protecting it from tampering or fraud. This technology provides a tamper-proof, 
+									permanent record that can be trusted worldwide.
 									</p>
 								</Card.Body>
 							</Card>
@@ -230,13 +236,15 @@ const Home: FC = () => {
 								<Card.Body className="p-4">
 									<div className="d-flex align-items-center mb-3">
 										<div className="bg-info bg-opacity-10 rounded p-2 me-3">
-											<i className="bi bi-wallet2 text-info" style={{ fontSize: '1.5rem' }}></i>
+											<i className="bi bi-palette text-info" style={{ fontSize: '1.5rem' }}></i>
 										</div>
-										<h4 className="fw-bold text-dark mb-0">No Hidden Costs</h4>
+										<h4 className="fw-bold text-dark mb-0">Modern, Intuitive Design</h4>
 									</div>
 									<p className="text-muted">
-										You don't incur any costs when uploading data to the blockchain. Issue unlimited 
-										credentials to your users without being surprised by additional fees.
+									The platform features a clean and modern interface that's easy to navigate for both 
+									administrators and users. Designed with usability in mind, every element is streamlined 
+									to support efficiency and reduce friction in the diploma issuance process. The layout is 
+									responsive and works seamlessly across devices.
 									</p>
 								</Card.Body>
 							</Card>
@@ -246,13 +254,14 @@ const Home: FC = () => {
 								<Card.Body className="p-4">
 									<div className="d-flex align-items-center mb-3">
 										<div className="bg-warning bg-opacity-10 rounded p-2 me-3">
-											<i className="bi bi-leaf text-warning" style={{ fontSize: '1.5rem' }}></i>
+											<i className="bi bi-award text-warning" style={{ fontSize: '1.5rem' }}></i>
 										</div>
-										<h4 className="fw-bold text-dark mb-0">Eco-Friendly Blockchain</h4>
+										<h4 className="fw-bold text-dark mb-0">Trusted by Educational Institutions</h4>
 									</div>
 									<p className="text-muted">
-										We're leading the way in sustainable blockchain technology, so you can get all the 
-										benefits of blockchain verification without sacrificing environmental responsibility.
+									Designed specifically for educational providers, our solution meets institutional needs for security, 
+									scalability, and compliance. From universities to training centers, any organization can issue 
+									verified diplomas with confidence.
 									</p>
 								</Card.Body>
 							</Card>
@@ -262,7 +271,7 @@ const Home: FC = () => {
 			</section>
 
 			{/* Quick Actions Section */}
-			<section className="py-5 bg-white">
+			<section className="py-5 bg-white" id="getStarted">
 				<Container>
 					<div className="text-center mb-5">
 						<h3 className="fw-bold text-dark">Get Started Today</h3>
@@ -321,9 +330,9 @@ const Home: FC = () => {
 						<Button 
 							variant="link" 
 							className="text-start p-0 text-dark text-decoration-none"
-							onClick={() => scrollToSection('trusted')}
+							onClick={() => scrollToSection('getStarted')}
 						>
-							Made for
+							Get started
 						</Button>
 						<hr />
 						{utilLinks.map(link => (

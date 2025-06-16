@@ -120,17 +120,6 @@ function Signup() {
                     api.defaults.headers.common.Authorization = `Bearer ${data.token}`;
 
                     navigate('/registerStudents');
-                    // Register provider
-                    // await postJson('/providers', providerPayload);
-                    // const { token } = await postJson<{ email: string; password: string }, { token: string }>(
-                    // '/providers/token',
-                    // {
-                    //     email: providerForm.values.email,
-                    //     password: providerForm.values.password
-                    // }
-                    // );
-                    // localStorage.setItem('authToken', token);
-                    // navigate('/registerStudents');
                 }
             } catch (err: any) {
                 const serverErrors = err.response?.data?.errors;
