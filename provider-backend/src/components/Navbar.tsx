@@ -5,10 +5,16 @@ import NavDropdown from 'react-bootstrap/NavDropdown';
 import { useLocation } from 'react-router-dom';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import AccountDropdown from './AccountDropdown';
-
+import { useState, useEffect } from 'react';
 
 function NavbarComponent() {
     const currentLocation = useLocation();
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        setIsLoggedIn(!!token);
+    }, []);
 
     return (
         <Navbar expand="lg" className="bg-body-tertiary">
@@ -22,25 +28,28 @@ function NavbarComponent() {
                 navbarScroll
             >
                 <Nav.Link href="/home">Home</Nav.Link>  
-                <Nav.Link href="/registerStudents">Register Students</Nav.Link>
-                <Nav.Link href="/registerCertification">Register Certification</Nav.Link>
-                
+                {isLoggedIn && (
+                    <>
+                        <Nav.Link href="/registerStudents">Register Students</Nav.Link>
+                        <Nav.Link href="/registerCertification">Register Certification</Nav.Link>
+                    </>
+                )}
             </Nav>
 
 			{/* LOGIN, SIGNUP  and LOGOUT*/}
 			<Nav className="ms-auto">
-				{['/home', '/login'].includes(currentLocation.pathname)  && (
+				{!isLoggedIn && ['/home', '/login'].includes(currentLocation.pathname)  && (
 					<>
 						<Nav.Link href="/signup" className="d-inline-flex">Signup</Nav.Link>
 					</>
 				)}
-				{['/home', '/signup'].includes(currentLocation.pathname) && (
+				{!isLoggedIn && ['/home', '/signup'].includes(currentLocation.pathname) && (
 					<>
 					<Nav.Link href="/login" className="d-inline-flex">Login</Nav.Link>
 					</>
 				)}
-				{currentLocation.pathname === '/registerStudents' || currentLocation.pathname === '/registerCertification' && (
-                    <AccountDropdown></AccountDropdown>
+				{isLoggedIn && (
+                    <AccountDropdown />
                     // <i className="bi bi-person-circle account-icon"></i>
                     // <Nav.Link href="/logout">Logout</Nav.Link>
 				)}

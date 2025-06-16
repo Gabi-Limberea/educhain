@@ -9,19 +9,26 @@
 // }, 30_000);
 
 const express = require('express');
-const app = express();
 const cors = require('cors');
-const multer  = require('multer')
-const PORT = 8080; 
-const fs = require('fs');
+const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const archiver = require('archiver');
 
+const app = express();
+const port = 8080;
+
+// Enable CORS
 app.use(cors());
 app.use(express.json());
 
+// Log all incoming requests
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+});
 
-// set local storage for the uploaded files
+// Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         // where is the folder located locally
@@ -34,7 +41,7 @@ const storage = multer.diskStorage({
         const fileExtension = path.extname(file.originalname); // to keep the original file extesion
         cb(null, `${extractedName}-${uniqueSuffix}${fileExtension}`);
     }
-})
+});
 
 const storageForMultipleFiles = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -42,16 +49,14 @@ const storageForMultipleFiles = multer.diskStorage({
         cb(null, 'C:/Users/Miha/Desktop/POLI/licenta/uploadedFilesEduChain')
     },
     filename: function (req, file, cb) {
-        const extractedName = file.originalname.substring(0, file.originalname.lastIndexOf('.'));
-        const fileExtension = path.extname(file.originalname); // to keep the original file extesion
-        cb(null, `${extractedName}${fileExtension}`);
+        // keep original filename
+        cb(null, file.originalname);
     }
-})
+});
 
-  
 const upload = multer({ storage: storage });
-const uploadMultipleFiles = multer ({storage: storageForMultipleFiles});
-  
+const uploadMultiple = multer({ storage: storageForMultipleFiles });
+
 // POST request to handle file uploads from providers for students' data
 app.post('/uploadFile', upload.single('file'), (req, res) =>{
     try {
@@ -70,22 +75,42 @@ app.post('/uploadFile', upload.single('file'), (req, res) =>{
     }
 });
 
+// Endpoint to serve files from uploadedFilesEduChain folder
+app.get('/local-diplomas/:filename', (req, res) => {
+    console.log('Received request for file:', req.params.filename);
+    
+    const filePath = path.join('C:/Users/Miha/Desktop/POLI/licenta/uploadedFilesEduChain', req.params.filename);
+    console.log('Looking for file at:', filePath);
+
+    if (!fs.existsSync(filePath)) {
+        console.log('File not found at path:', filePath);
+        return res.status(404).json({ error: 'File not found' });
+    }
+
+    console.log('File found, sending...');
+    // Send the file
+    res.sendFile(filePath, (err) => {
+        if (err) {
+            console.error('Error sending file:', err);
+            res.status(500).json({ error: 'Error sending file' });
+        } else {
+            console.log('File sent successfully');
+        }
+    });
+});
 
 // limit for uploading in bulk is 100 for now, to modify as you need
-app.post('/uploadFiles', uploadMultipleFiles.array('files', 100), (req, res) =>{
+app.post('/uploadFiles', uploadMultiple.array('files', 100), (req, res) => {
     try {
-         // try to access uploaded archive
-         const files = req.files;
-
-        if (!files || files.length === 0) {
-            return res.status(400).json({message: 'Bad request'});
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No files uploaded' });
         }
- 
-        // console.log(`Files uploaded: ${files.map(file => file.filename).join(', ')}`);
-        res.status(200).json({message: 'Files uploaded successfully', files});
+
+        const fileNames = req.files.map(file => file.originalname);
+        res.json({ message: 'Files uploaded successfully', files: fileNames });
     } catch (error) {
-        console.log("Error uploading archive", error);
-        res.status(500).json({message: 'Internal server errror'});
+        console.error('Error uploading files:', error);
+        res.status(500).json({ error: 'Error uploading files' });
     }
 });
 
@@ -187,4 +212,44 @@ app.get('/getCertifications', (req, res) => {
     });
 });
 
-app.listen(PORT, () => console.log( `Server running on port ${PORT} `));
+// Endpoint to serve diploma files
+app.get('/diploma-files/:filename', (req, res) => {
+    console.log('Received request for diploma file:', req.params.filename);
+    
+    const filePath = path.join('C:/Users/Miha/Desktop/POLI/licenta/uploadedFilesEduChain', req.params.filename);
+    console.log('Looking for diploma file at:', filePath);
+
+    // Check if directory exists
+    const dirPath = 'C:/Users/Miha/Desktop/POLI/licenta/uploadedFilesEduChain';
+    if (!fs.existsSync(dirPath)) {
+        console.log('Directory does not exist:', dirPath);
+        return res.status(404).json({ error: 'Directory not found' });
+    }
+
+    // List files in directory
+    const files = fs.readdirSync(dirPath);
+    console.log('Files in directory:', files);
+
+    if (!fs.existsSync(filePath)) {
+        console.log('Diploma file not found at path:', filePath);
+        return res.status(404).json({ error: 'Diploma file not found' });
+    }
+
+    console.log('Diploma file found, sending...');
+    // Send the file
+    res.sendFile(filePath, (err) => {
+        if (err) {
+            console.error('Error sending diploma file:', err);
+            res.status(500).json({ error: 'Error sending diploma file' });
+        } else {
+            console.log('Diploma file sent successfully');
+        }
+    });
+});
+
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+    console.log('Available endpoints:');
+    console.log('- GET /diploma-files/:filename');
+    // ... log other endpoints ...
+});

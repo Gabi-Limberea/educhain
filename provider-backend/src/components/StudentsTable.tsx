@@ -1,87 +1,98 @@
+import React from 'react';
 import { StudentsInfo } from "../Types";
+import api from '../services/api';
 import axios from 'axios';
 
 interface StudentsTableProps {
-    jsonWithStudents: StudentsInfo[] | null;
-};
+    jsonWithStudents: StudentsInfo[];
+    setJsonWithStudents: React.Dispatch<React.SetStateAction<StudentsInfo[]>>;
+}
 
-function StudentsTable({jsonWithStudents}: StudentsTableProps) {
-    // console.log("Data received by StudentsTable:", jsonWithStudents);
-    if (!jsonWithStudents || jsonWithStudents.length === 0) {
-        console.error('No data in studentsJSON to display');
-        return (
-            <div> No data available for students. Please check your .csv file and reload it. </div>
-        )
-    }
-	return (
+const StudentsTable: React.FC<StudentsTableProps> = ({ jsonWithStudents, setJsonWithStudents }) => {
+    const handleGenerateDiploma = async (studentId: string) => {
+        try {
+            // First, get the diploma file from our local server
+            const fileResponse = await axios.get(`http://localhost:8080/diploma-files/${studentId}.pdf`, {
+                responseType: 'blob'
+            });
+
+            // Create a File object from the blob
+            const file = new File([fileResponse.data as Blob], `${studentId}.pdf`, { type: 'application/pdf' });
+
+            // Create FormData and append the file with the key 'file'
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Send the file to the API
+            const response = await api.post(`/students/${studentId}/diplomas`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            // Update localStorage with issued diplomas
+            const issuedDiplomas = JSON.parse(localStorage.getItem('issuedDiplomas') || '[]');
+            issuedDiplomas.push(studentId);
+            localStorage.setItem('issuedDiplomas', JSON.stringify(issuedDiplomas));
+
+            // Update the students list to reflect the issuance
+            setJsonWithStudents(prevStudents => 
+                prevStudents.map(student => 
+                    student.studentId === studentId 
+                        ? { ...student, diplomaIssued: true }
+                        : student
+                )
+            );
+
+            // Show success message
+            alert('Diploma generated successfully!');
+        } catch (error) {
+            console.error('Error generating diploma:', error);
+            alert('Failed to generate diploma. Please try again.');
+        }
+    };
+
+    return (
         <div className="table-responsive">
-            <table className="table table-hover">
+            <table className="table table-striped">
                 <thead>
                     <tr>
-                        <th scope="col" className="py-3">Student ID</th>
-                        <th scope="col" className="py-3">Wallet</th>
-                        <th scope="col" className="py-3">Diploma</th>
+                        <th>Student ID</th>
+                        <th>Wallet Address</th>
+                        <th>Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
-                {/* map info received from JSON to table cells */}
                 <tbody>
-                    {jsonWithStudents.map((student, index) => (
-                        <tr key={index}>
-                            <td className="py-3">{student.studentId}</td>
-                            <td className="py-3">{student.walletAddress}</td>
-                            { student.studentId && (
-                                <td className="py-3 "> {student.uploadedDiploma ? addGenerateButton(student.studentId) : "No added diploma"}
-                                </td>
-                            )}
+                    {jsonWithStudents.map((student) => (
+                        <tr key={student.studentId}>
+                            <td>{student.studentId}</td>
+                            <td>{student.walletAddress}</td>
+                            <td>
+                                {student.diplomaIssued ? (
+                                    <span className="text-success">Diploma issued</span>
+                                ) : student.uploadedDiploma ? (
+                                    <span className="text-warning">Diploma uploaded</span>
+                                ) : (
+                                    <span className="text-danger">No diploma</span>
+                                )}
+                            </td>
+                            <td>
+                                {student.uploadedDiploma && !student.diplomaIssued && (
+                                    <button
+                                        className="btn btn-primary btn-sm"
+                                        onClick={() => handleGenerateDiploma(student.studentId)}
+                                    >
+                                        Generate
+                                    </button>
+                                )}
+                            </td>
                         </tr>
                     ))}
                 </tbody>
             </table>
         </div>
     );
-	
-};
-
-const handleGenerateDiploma = async (studentId: string) => {
-    try {
-        // path to find student's diploma
-        const filePath = `C:/Users/Miha/Desktop/POLI/licenta/uploadedFilesEduChain/${studentId}.pdf`;
-
-        // create a File object from the file path
-        const file = new File([filePath], `${studentId}.pdf`, { type: 'application/pdf' });
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        // just for debug until POST works
-        console.log(`Diploma generated for student ${studentId}:`);
-
-        // POST request => !!! will not work until connected to the backend
-        const response = await axios.post(`/students/${studentId}/diplomas`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
-
-        console.log(`Diploma generated for student ${studentId}:`, response.data);
-        alert(`Diploma successfully generated for student ${studentId}`);
-    } catch (error) {
-        console.error(`Error generating diploma for student ${studentId}:`, error);
-        alert(`Failed to generate diploma for student ${studentId}`);
-    }
-};
-
-
-const addGenerateButton = (studentId: string) => {
-    return (
-        <div className="d-inline-flex flex-row w-100 ">
-            <div>Added diploma</div>
-            <button type="submit" 
-            className="btn btn-secondary mx-3" 
-            onClick={() => handleGenerateDiploma(studentId)}
-            > Generate </button>        
-        </div>
-    )
-};
+}
 
 export default StudentsTable;

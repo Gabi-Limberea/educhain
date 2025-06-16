@@ -1,30 +1,33 @@
 import React, { useState } from 'react';
-import { Container, Row, Col, Card, Button, Form } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Form, Alert } from 'react-bootstrap';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import axios from 'axios';
+import { useCertifications } from '../context/CertificationContext';
 
 function RegisterCertification() {
-    const [certificationName, setCertificationName] = useState('');
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [showSuccess, setShowSuccess] = useState(false);
+    const { addCertification } = useCertifications();
 
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setCertificationName(event.target.value);
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        // Add certification to context
+        addCertification({
+            name,
+            description,
+            date: new Date().toISOString().split('T')[0]
+        });
+
+        // Clear form
+        setName('');
+        setDescription('');
+        
+        // Show success message
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
     };
 
-    const handleSubmit = async (event: React.FormEvent) => {
-        event.preventDefault();
-        if (certificationName.trim() !== '') {
-            try {
-                const response = await axios.post('http://localhost:8080/addCertification', {
-                    certificationName,
-                });
-                console.log(response.data);
-                setCertificationName(''); // Clear the input field
-            } catch (error) {
-                console.error('Error adding certification:', error);
-            }
-        }
-    };
-    
     return (
         <div className="bg-light min-vh-100 py-5">
             <Container>
@@ -38,7 +41,11 @@ function RegisterCertification() {
                                 <p className="text-muted mb-0">Create a new certificate template</p>
                             </Card.Header>
                             <Card.Body className="p-4">
-                                {/* FORM */}
+                                {showSuccess && (
+                                    <Alert variant="success" onClose={() => setShowSuccess(false)} dismissible>
+                                        Certification registered successfully!
+                                    </Alert>
+                                )}
                                 <Form onSubmit={handleSubmit}>
                                     <Form.Group className="mb-4">
                                         <Form.Label className="fw-medium text-dark mb-2">
@@ -48,15 +55,33 @@ function RegisterCertification() {
                                         <Form.Control 
                                             type="text" 
                                             placeholder="Enter certification name (e.g., Web Development Bootcamp)" 
-                                            value={certificationName}
-                                            onChange={handleChange}
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
                                             className="py-3"
                                             style={{ fontSize: '1rem' }}
+                                            required
                                         />
                                         <Form.Text className="text-muted">
                                             <i className="bi bi-info-circle me-1"></i>
                                             This will be the title of your certificate template
                                         </Form.Text>
+                                    </Form.Group>
+
+                                    <Form.Group className="mb-4">
+                                        <Form.Label className="fw-medium text-dark mb-2">
+                                            <i className="bi bi-file-earmark-text me-2"></i>
+                                            Description
+                                        </Form.Label>
+                                        <Form.Control
+                                            as="textarea"
+                                            rows={3}
+                                            placeholder="Enter certification description"
+                                            value={description}
+                                            onChange={(e) => setDescription(e.target.value)}
+                                            className="py-3"
+                                            style={{ fontSize: '1rem' }}
+                                            required
+                                        />
                                     </Form.Group>
 
                                     <div className="d-grid">

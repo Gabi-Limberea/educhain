@@ -39,8 +39,29 @@ function Login() {
 			}
 		};
 			
-		await api.post('/providers/token', "", config);
-		navigate('/registerStudents');
+		try {
+			const { data } = await api.post<string>('/providers/token', "", config);
+			console.log('Full response data:', data); // Debug log to see the exact response structure
+			
+			// The token is the response data itself
+			if (!data) {
+				console.error('No token in response');
+				throw new Error('No token received from server');
+			}
+
+			// Store the token
+			localStorage.setItem('authToken', data);
+			console.log('Token stored in localStorage:', localStorage.getItem('authToken')); // Verify storage
+			
+			// Set the token in API headers
+			api.defaults.headers.common.Authorization = `Bearer ${data}`;
+			console.log('API headers after setting token:', api.defaults.headers.common); // Verify headers
+			
+			navigate('/registerStudents');
+		} catch (error) {
+			console.error('Login failed:', error);
+			alert("Failed login, please try again!");
+		}
 
 		setValidFormData(true);
 	};
