@@ -39,7 +39,7 @@ const providerInitialValues = {
 
 function Signup() {
     const [showPassword, setShowPassword] = useState(false);
-    const [userType, setUserType] = useState<UserType>('student');
+    const [userType, setUserType] = useState<UserType>('provider');
     const navigate = useNavigate();
 
     const studentForm = useFormValidation(studentInitialValues);
@@ -137,7 +137,7 @@ function Signup() {
         <div className="d-flex justify-content-center py-4">
             <Form className="d-flex flex-column align-items-start w-25" onSubmit={handleSubmit}>
                 {/* User Type Selection */}
-                <Form.Group className="mb-3 w-100">
+                {/* <Form.Group className="mb-3 w-100">
                     <Form.Label>I am a:</Form.Label>
                     <div>
                         <Form.Check
@@ -157,7 +157,7 @@ function Signup() {
                             onChange={() => handleUserTypeChange('provider')}
                         />
                     </div>
-                </Form.Group>
+                </Form.Group> */}
 
                 {/* Student Fields */}
                 {userType === 'student' && (

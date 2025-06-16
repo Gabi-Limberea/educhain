@@ -1,9 +1,18 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Offcanvas } from 'react-bootstrap';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const Home: FC = () => {
 	const [showMenu, setShowMenu] = useState(false);
+	const [isLoggedIn, setIsLoggedIn] = useState(false);
+	const [userType, setUserType] = useState<'student' | 'provider' | null>(null);
+
+	useEffect(() => {
+		const token = localStorage.getItem('authToken');
+		const type = localStorage.getItem('userType') as 'student' | 'provider' | null;
+		setIsLoggedIn(!!token || !!type);
+		setUserType(type);
+	}, []);
 
 	const utilLinks = [
 		{ href: '/account', label: 'Account', icon: 'bi-person' },
@@ -142,9 +151,15 @@ const Home: FC = () => {
 							using blockchain technology—secure, efficient, and easy to use.
 							</p>
 							<div className="d-flex gap-3 flex-wrap">
-								<Button variant="primary" size="lg" href="/signup">
-									Get Started Now
-								</Button>
+								{userType === 'provider' ? (
+									<Button variant="primary" size="lg" href="/registerStudents">
+										Register Students
+									</Button>
+								) : !isLoggedIn ? (
+									<Button variant="primary" size="lg" href="/signup">
+										Get Started Now
+									</Button>
+								) : null}
 								<Button variant="outline-secondary" size="lg" onClick={redirectToDocs}>
 									API Documentation
 								</Button>
@@ -270,41 +285,47 @@ const Home: FC = () => {
 				</Container>
 			</section>
 
-			{/* Quick Actions Section */}
-			<section className="py-5 bg-white" id="getStarted">
-				<Container>
-					<div className="text-center mb-5">
-						<h3 className="fw-bold text-dark">Get Started Today</h3>
-						<p className="text-muted">Choose your path to blockchain-verified credentials</p>
-					</div>
-					<Row className="justify-content-center">
-						<Col md={4} className="mb-4">
-							<Card className="border-0 shadow-sm text-center h-100">
-								<Card.Body className="p-4">
-									<i className="bi bi-person-plus text-primary mb-3" style={{ fontSize: '3rem' }}></i>
-									<h5 className="fw-bold">Register Students</h5>
-									<p className="text-muted mb-4">Add new students to the platform and manage their academic journey</p>
-									<Button variant="outline-primary" href="/registerStudents" className="w-100">
-										Get Started
-									</Button>
-								</Card.Body>
-							</Card>
-						</Col>
-						<Col md={4} className="mb-4">
-							<Card className="border-0 shadow-sm text-center h-100">
-								<Card.Body className="p-4">
-									<i className="bi bi-award text-success mb-3" style={{ fontSize: '3rem' }}></i>
-									<h5 className="fw-bold">Register Certificates</h5>
-									<p className="text-muted mb-4">Create blockchain-verified digital certificates for your contests</p>
-									<Button variant="outline-success" href="/registerCertification" className="w-100">
-										Issue Now
-									</Button>
-								</Card.Body>
-							</Card>
-						</Col>
-					</Row>
-				</Container>
-			</section>
+			{/* Get Started Section */}
+			{userType === 'provider' && (
+				<section className="py-5 bg-white" id="getStarted">
+					<Container>
+						<div className="text-center mb-5">
+							<h3 className="fw-bold text-dark">Get Started Today</h3>
+							<p className="text-muted">Choose your path to blockchain-verified credentials</p>
+						</div>
+						<Row className="justify-content-center">
+							<Col md={4} className="mb-4">
+								<Card className="border-0 shadow-sm text-center h-100">
+									<Card.Body className="p-4">
+										<i className="bi bi-person-plus text-primary mb-3" style={{ fontSize: '3rem' }}></i>
+										<h5 className="fw-bold">Register Students</h5>
+										<p className="text-muted mb-4">Add new students to the platform and manage their academic journey</p>
+										<Button variant="outline-primary" href="/registerStudents" className="w-100">
+											Get Started
+										</Button>
+									</Card.Body>
+								</Card>
+							</Col>
+							<Col md={4} className="mb-4">
+								<Card className="border-0 shadow-sm text-center h-100">
+									<Card.Body className="p-4">
+										<i className="bi bi-award text-success mb-3" style={{ fontSize: '3rem' }}></i>
+										<h5 className="fw-bold">Register Certificates</h5>
+										<p className="text-muted mb-4">Create blockchain-verified digital certificates for your contests</p>
+										<Button 
+											variant="outline-success" 
+											href="/registerCertification" 
+											className="w-100"
+										>
+											Issue Now
+										</Button>
+									</Card.Body>
+								</Card>
+							</Col>
+						</Row>
+					</Container>
+				</section>
+			)}
 
 			{/* Mobile Menu */}
 			<Offcanvas show={showMenu} onHide={() => setShowMenu(false)} placement="end">
@@ -312,34 +333,18 @@ const Home: FC = () => {
 					<Offcanvas.Title>Menu</Offcanvas.Title>
 				</Offcanvas.Header>
 				<Offcanvas.Body>
-					<div className="d-grid gap-3">
-						<Button 
-							variant="link" 
-							className="text-start p-0 text-dark text-decoration-none"
-							onClick={() => scrollToSection('overview')}
-						>
-							Overview
-						</Button>
-						<Button 
-							variant="link" 
-							className="text-start p-0 text-dark text-decoration-none"
-							onClick={() => scrollToSection('features')}
-						>
-							Features
-						</Button>
-						<Button 
-							variant="link" 
-							className="text-start p-0 text-dark text-decoration-none"
-							onClick={() => scrollToSection('getStarted')}
-						>
-							Get started
-						</Button>
-						<hr />
+					<div className="d-flex flex-column gap-3">
+						<Button variant="link" onClick={() => scrollToSection('overview')}>Overview</Button>
+						{userType === 'provider' && (
+							<>
+								<Button variant="link" onClick={() => scrollToSection('getStarted')}>Get Started</Button>
+							</>
+						)}
 						{utilLinks.map(link => (
-							<a key={link.href} href={link.href} className="btn btn-outline-secondary text-start">
-								<i className={`${link.icon} me-2`}></i>
+							<Button key={link.href} variant="link" href={link.href}>
+								<i className={`bi ${link.icon} me-2`}></i>
 								{link.label}
-							</a>
+							</Button>
 						))}
 					</div>
 				</Offcanvas.Body>

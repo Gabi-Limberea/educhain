@@ -49,6 +49,7 @@
     flex-direction: column;
     align-items: flex-start;
     justify-content: left;
+    scrollbar-width: none;
 }
 
 /* right container */
@@ -61,15 +62,17 @@
 
 /* right top container */
 .right-top {
-    height: 50%;
+    height: 100%;
     margin-bottom: 2%;
     padding: 2%;
     /* background-color: lightcoral; */
     display: flex;
     align-items: center;
-    align-items: flex-start;
-    justify-content: left;
+    /* align-items: flex-start; */
+    /* justify-content: left; */
     flex-direction: column;
+    overflow-y: scroll;
+    scrollbar-width: none;
 }
 
 /* right bottom container */
