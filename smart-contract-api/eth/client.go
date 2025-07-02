@@ -13,6 +13,7 @@ import (
 	"smart-contract-api/contract"
 	"smart-contract-api/ipfs"
 	"smart-contract-api/models"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -20,6 +21,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
+
+var mut sync.Mutex
 
 type Client struct {
 	conn         *ethclient.Client
@@ -122,7 +125,7 @@ func (c *Client) NewContract() (string, error) {
 func GenerateNFTMetadataFile(file *ipfs.File, provider models.Provider) (io.ReadCloser, error) {
 	metadata := map[string]string{
 		"name":        file.Name,
-		"image":       fmt.Sprintf("ipfs://%s", file.Hash),
+		"image":       fmt.Sprintf("ipfs.io/ipfs/%s", file.Hash),
 		"description": fmt.Sprintf("Diploma provided by %s", provider.OrganizationInfo.Name),
 	}
 
@@ -138,29 +141,31 @@ func GenerateNFTMetadataFile(file *ipfs.File, provider models.Provider) (io.Read
 func (c *Client) MintNFT(tokenURI, contractAddr, destAddr string) (*int64, error) {
 	diplomaContract := contract.NewDiploma()
 	instance := diplomaContract.Instance(c.conn, common.HexToAddress(contractAddr))
+
+	mut.Lock()
 	chainID, err := c.conn.ChainID(context.Background())
 	if err != nil {
+		mut.Unlock()
 		return nil, fmt.Errorf("could not get chain ID: %w", err)
 	}
 
 	auth := bind.NewKeyedTransactor(c.masterKey, chainID)
-	tx, err := bind.Transact(
+	_, err = bind.Transact(
 		instance, auth, diplomaContract.PackSafeMint(common.HexToAddress(destAddr), tokenURI),
 	)
 	if err != nil {
+		mut.Unlock()
 		return nil, fmt.Errorf("could not transact: %w", err)
-	}
-
-	if _, err = bind.WaitMined(context.Background(), c.conn, tx.Hash()); err != nil {
-		return nil, fmt.Errorf("could not deploy contract: %w", err)
 	}
 
 	res, err := bind.Call(
 		instance, nil, diplomaContract.PackTokenCounter(), diplomaContract.UnpackTokenCounter,
 	)
 	if err != nil {
+		mut.Unlock()
 		return nil, fmt.Errorf("could not unpack token counter: %w", err)
 	}
+	mut.Unlock()
 
 	tokenID := res.Int64()
 	return &tokenID, nil

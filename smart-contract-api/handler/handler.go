@@ -10,11 +10,13 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"slices"
 	"smart-contract-api/eth"
 	"smart-contract-api/ipfs"
 	"smart-contract-api/models"
 	"smart-contract-api/pgsql"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Gabi-Limberea/educhain/ipfs-api/constants"
@@ -146,6 +148,23 @@ func (h *Handler) ProviderRegister(w http.ResponseWriter, r *http.Request) {
 		wr.Error(http.StatusBadRequest, fmt.Errorf("invalid request body"))
 		return
 	}
+
+	selectStmt := fmt.Sprintf(
+		"select pid from providers where email='%s' or name='%s'", provider.Email,
+		provider.OrganizationInfo.Name,
+	)
+	res, err := h.db.Query(selectStmt)
+	if err != nil {
+		slog.Error("failed to query provider", "error", err)
+		wr.Error(http.StatusBadRequest, err)
+		return
+	}
+	if res.Next() {
+		slog.Error("user already registered")
+		wr.Error(http.StatusConflict, fmt.Errorf("user already registered with this email or name"))
+		return
+	}
+	res.Close()
 
 	provider.ContractAddress, err = h.ethClient.NewContract()
 	if err != nil {
@@ -680,59 +699,115 @@ func (h *Handler) DiplomasBulkUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	diplomas := make([]models.Diploma, len(files))
+	diplomas := make([]*models.Diploma, len(files))
 	sqlDiplomas := make([]string, len(files))
-	for i, file := range files {
-		rows, err := h.getStudent(file.Name, pid)
-		if err != nil {
-			slog.Error("failed to check student existence", "error", err)
-			wr.Error(http.StatusInternalServerError, fmt.Errorf("failed to retrieve student"))
-			return
-		}
 
-		if !rows.Next() {
-			if err = rows.Err(); err != nil {
-				slog.Error("failed to query student", "error", err)
-				wr.Error(http.StatusInternalServerError, fmt.Errorf("failed to query student"))
+	var aggregatedErrors []string
+	var wg sync.WaitGroup
+	errs := make(chan error)
+	errsDone := make(chan struct{})
+
+	go func() {
+		for err := range errs {
+			if err != nil {
+				aggregatedErrors = append(aggregatedErrors, err.Error())
+			}
+		}
+		errsDone <- struct{}{}
+	}()
+
+	for i, file := range files {
+		wg.Add(1)
+
+		go func() {
+			rows, err := h.getStudent(file.Name, pid)
+			if err != nil {
+				slog.Error("failed to check student existence", "error", err, "student", file.Name)
+				errs <- fmt.Errorf("failed to retrieve student %s", file.Name)
+				wg.Done()
 				return
 			}
 
-			slog.Info("no student found")
-			wr.Error(http.StatusNotFound, fmt.Errorf("student not found"))
-			return
-		}
+			if !rows.Next() {
+				if err = rows.Err(); err != nil {
+					slog.Error("failed to query student", "error", err, "student", file.Name)
+					errs <- fmt.Errorf("failed to query student %s", file.Name)
+					wg.Done()
+					return
+				}
 
-		var student models.Student
-		if err = rows.Scan(&student.ExternalID, &student.WalletAddress); err != nil {
-			slog.Error("failed to parse query result", "error", err)
-			wr.Error(http.StatusInternalServerError, fmt.Errorf("failed to query student"))
-			return
-		}
-		rows.Close()
+				slog.Info("no student found", "student", file.Name)
+				errs <- fmt.Errorf("student %s not found", file.Name)
+				wg.Done()
+				return
+			}
 
-		diploma, err := h.uploadDiplomaForStudent(student, pid, file, file.Name)
-		if err != nil {
-			slog.Error("failed to upload diploma for student", "error", err)
-			wr.Error(
-				http.StatusInternalServerError, fmt.Errorf("failed to upload diploma for student"),
-			)
-		}
+			var student models.Student
+			if err = rows.Scan(&student.ExternalID, &student.WalletAddress); err != nil {
+				slog.Error("failed to parse query result", "error", err, "student", file.Name)
+				errs <- fmt.Errorf("failed to query student %s", file.Name)
+				wg.Done()
+				return
+			}
+			rows.Close()
 
-		diplomas[i] = *diploma
-		sqlDiplomas[i] = diploma.ToSQL()
+			diploma, err := h.uploadDiplomaForStudent(student, pid, file, file.Name)
+			if err != nil {
+				slog.Error(
+					"failed to upload diploma for student", "error", err, "student", file.Name,
+				)
+				errs <- fmt.Errorf("failed to upload diploma for student %s", file.Name)
+				wg.Done()
+				return
+			}
+
+			diplomas[i] = diploma
+			sqlDiplomas[i] = diploma.ToSQL()
+			errs <- nil
+			wg.Done()
+		}()
 	}
 
-	insertStmt := fmt.Sprintf(
-		"insert into diplomas (did, student, provider) values %s", strings.Join(sqlDiplomas, ", "),
+	wg.Wait()
+	close(errs)
+
+	<-errsDone
+
+	uploadedDiplomas := slices.DeleteFunc(
+		diplomas, func(diploma *models.Diploma) bool {
+			return diploma == nil
+		},
 	)
-	_, err = h.db.Exec(insertStmt)
-	if err != nil {
-		slog.Error("failed to insert diplomas", "error", err)
-		wr.Error(pgsql.TranslatePQError(err))
-		return
+	uploadedSQLDiplomas := slices.DeleteFunc(
+		sqlDiplomas, func(sqlDiploma string) bool {
+			return sqlDiploma == ""
+		},
+	)
+	status := http.StatusCreated
+
+	if len(uploadedDiplomas) > 0 {
+		insertStmt := fmt.Sprintf(
+			"insert into diplomas (did, student, provider) values %s",
+			strings.Join(uploadedSQLDiplomas, ", "),
+		)
+		_, err = h.db.Exec(insertStmt)
+		if err != nil {
+			slog.Error("failed to insert diplomas", "error", err)
+			wr.Error(pgsql.TranslatePQError(err))
+			return
+		}
+
+		if len(uploadedDiplomas) != len(files) {
+			status = http.StatusMultiStatus
+		}
+	} else {
+		status = http.StatusBadRequest
 	}
 
-	wr.Object(http.StatusCreated, diplomas)
+	response := map[string]interface{}{}
+	response["uploaded"] = uploadedDiplomas
+	response["failed"] = aggregatedErrors
+	wr.Object(status, response)
 }
 
 func (h *Handler) CORSOptionsHandler(w http.ResponseWriter, r *http.Request) {

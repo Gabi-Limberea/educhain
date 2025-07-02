@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: ipfs-api
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: ipfs-api

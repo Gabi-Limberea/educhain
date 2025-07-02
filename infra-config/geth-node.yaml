@@ -44,7 +44,7 @@ spec:
           "--password",
           "geth-dev-account-passwd.txt",
           "--http.corsdomain",
-          "https://remix.ethereum.org",
+          "*",
         ] # Allow CORS for Remix IDE testing
       resources:
         limits:
@@ -76,12 +76,11 @@ metadata:
   labels:
     app: geth
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
     - name: geth
       port: 8545
       targetPort: 8545
       protocol: TCP
-      nodePort: 30545
   selector:
     app: geth

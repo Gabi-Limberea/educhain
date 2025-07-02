@@ -5,28 +5,7 @@ metadata:
 data:
 # REPLACE THIS WITH A VALID MASTER KEY FROM THE GETH NODE
   master-key.json: |
-    {
-      "address": "689a78527274e0e76fa6c21eb5eb0acb5c7d052e",
-      "crypto": {
-        "cipher": "aes-128-ctr",
-        "ciphertext": "0c3c32fad910311d8f19b4e3afed2b663303e5a6c02ca1bcb97e0cfd50a90953",
-        "cipherparams": {
-          "iv": "ec1ce686c2b2fccc4812fde5a8da93d2"
-        },
-        "kdf": "scrypt",
-        "kdfparams": {
-          "dklen": 32,
-          "n": 4096,
-          "p": 6,
-          "r": 8,
-          "salt": "8ee1e3da56e975667ba8411d875592fd698ea3a97c93e1d521164d11c9d0e4ef"
-        },
-        "mac": "e6622362cff0790b6d64951e2c1aab0865793149369b122ead447d92bbb50d4d"
-      },
-      "id": "d4eac015-5bec-4a0d-807d-bbfd820a6040",
-      "version": 3
-    }
-
+    {"address":"71562b71999873db5b286df957af199ec94617f7","crypto":{"cipher":"aes-128-ctr","ciphertext":"0d190456613a9bd9656caf9dcc9fe73f6de6514bbb3dd181989d6b41c026eedb","cipherparams":{"iv":"851a1686fa023e86f64ccf199ac49a28"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":4096,"p":6,"r":8,"salt":"8db8f28c67bd92a4092ccce1ff31c56a838a051a06c94724364414acef69a02c"},"mac":"18c60f5607d1d311b54aa4dd7310d1f04f5dd08ab6f5df458411f0e7c5f6f721"},"id":"545bd094-bfc4-4866-8f16-5ffbf3cecaf4","version":3}
 
 ---
 apiVersion: apps/v1
@@ -34,6 +13,7 @@ kind: Deployment
 metadata:
   name: smart-contract-api
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: smart-contract-api
@@ -44,7 +24,7 @@ spec:
     spec:
       containers:
         - name: smart-contract-api
-          image: gabilb/smart-contract-api:v1.0.7
+          image: gabilb/smart-contract-api:v1.0.9
           imagePullPolicy: Always
           env:
             - name: IPFS_API_HOST

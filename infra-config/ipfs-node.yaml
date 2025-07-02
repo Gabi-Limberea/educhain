@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
     - name: ipfs
-      image: ipfs/go-ipfs:latest
+      image: ipfs/kubo:v0.35.0
       ports:
         - containerPort: 4001
           name: udp-port
@@ -18,6 +18,13 @@ spec:
         - containerPort: 5001
           name: rpc-port
           protocol: TCP
+      volumeMounts:
+      - name: ipfs-data
+        mountPath: /data/ipfs
+  volumes:
+    - name: ipfs-data
+      persistentVolumeClaim:
+        claimName: ipfs-data-pvc
 
 ---
 
@@ -31,13 +38,26 @@ spec:
   selector:
     app: ipfs
   ports:
+    - name: rpc-port
+      port: 5001
+      targetPort: 5001
     - name: udp-port
       port: 4001
       targetPort: 4001
     - name: gateway-port
       port: 8080
       targetPort: 8080
-    - name: rpc-port
-      port: 5001
-      targetPort: 5001
   type: ClusterIP
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ipfs-data-pvc
+spec:
+  resources:
+    requests:
+      storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce

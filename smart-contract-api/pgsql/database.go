@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/lib/pq"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/lib/pq"
 
 	_ "github.com/lib/pq"
 )
