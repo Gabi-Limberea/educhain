@@ -10,10 +10,11 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"sync"
+
 	"smart-contract-api/contract"
 	"smart-contract-api/ipfs"
 	"smart-contract-api/models"
-	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
