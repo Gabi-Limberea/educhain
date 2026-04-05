@@ -42,7 +42,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProviderCredentials'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "provider registered successfully"
         '400':
           description: Bad request
         '409':
@@ -161,7 +165,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal server error
-  /students/{id}:
+  /students/{student_id}:
     get:
       tags:
         - Students
@@ -172,7 +176,7 @@ paths:
       security:
         - token_auth: [ ]
       parameters:
-        - name: id
+        - name: student_id
           in: path
           required: true
           description: ID of the student to retrieve
@@ -204,7 +208,7 @@ paths:
       security:
         - token_auth: [ ]
       parameters:
-        - name: id
+        - name: student_id
           in: path
           required: true
           description: ID of the student to update
@@ -233,7 +237,7 @@ paths:
           description: Student not found
         '500':
           description: Internal server error
-  /students/{id}/diplomas:
+  /students/{student_id}/diplomas:
     post:
       description: |
         Issue a diploma for a student
@@ -241,7 +245,7 @@ paths:
       tags:
         - Students
       parameters:
-        - name: id
+        - name: student_id
           in: path
           required: true
           description: ID of the student to issue a diploma for
@@ -254,12 +258,12 @@ paths:
             schema:
               type: object
               properties:
-                diploma:
+                file:
                   type: string
                   format: pdf/jpeg/png
                   description: The diploma file to upload
             encoding:
-              diploma:
+              file:
                 contentType: application/pdf, image/jpeg, image/png
       responses:
         '201':
@@ -283,7 +287,7 @@ paths:
       tags:
         - Students
       parameters:
-        - name: id
+        - name: student_id
           in: path
           required: true
           description: ID of the student to get a diploma for
@@ -298,9 +302,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: string
-                  description: The hash ID of the diploma
-                  example: "QmShBmhvEZ1dDwPvLvpjimRW76AQrVz3fbpZYwsqNJN2Xh"
+                  $ref: "#/components/schemas/Diploma"
         '400':
           description: Bad request
         '401':
@@ -312,33 +314,39 @@ paths:
   /diplomas:
     post:
       description: |
-        Issue diplomas for a batch of students. All files within the archive must be named with the **student ID** and 
+        Issue diplomas for a batch of students. All files within the archive must be named with the **student ID** and
         be in the format of **pdf/jpeg/png**.
       operationId: issueDiplomas
       tags:
         - Students
+      security:
+        - token_auth: []
       requestBody:
         content:
           multipart/form-data:
             schema:
               type: object
               properties:
-                diplomas:
+                file:
                   type: string
                   format: zip
                   description: The archive with diploma files to upload
             encoding:
-              diplomas:
+              file:
                 contentType: application/zip
       responses:
         '201':
-          description: Diplomas issued successfully
+          description: All diplomas issued successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Diploma"
+                $ref: "#/components/schemas/BulkDiplomaResult"
+        '207':
+          description: Partial success — some diplomas failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkDiplomaResult"
         '400':
           description: Bad request
         '401':
@@ -349,6 +357,21 @@ paths:
 # An object to hold reusable parts that can be used across the definition
 components:
   schemas:
+    BulkDiplomaResult:
+      description: Result of a bulk diploma issuance operation
+      type: object
+      properties:
+        uploaded:
+          type: array
+          items:
+            $ref: "#/components/schemas/Diploma"
+        failed:
+          type: array
+          items:
+            type: string
+            description: Errors messages for the diplomas that failed to be
+             issued
+            example: "failed to upload diploma for student 06670347-9ef3-433f-b71b-18017bdde980"
     Diploma:
       description: The information to identify a diploma in the system
       type: object
